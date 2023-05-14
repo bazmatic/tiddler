@@ -1,0 +1,39 @@
+## Python
+*.pyc
+*.pyo
+*.pyd
+*.swp
+*.bak
+
+## Virtual environments
+.venv
+
+## Build artifacts
+*.egg-info
+*.egg
+*.build
+*.dist
+
+## Documentation
+*.md
+*.rst
+*.txt
+
+## Tests
+*.pytest
+*.tox
+*.coverage
+*.htmlcov
+
+## Other
+*.ipynb
+*.ipynb_checkpoints
+*.spyder*
+*.ropeproject
+*.mypy_cache
+*.pyre
+*.pytype
+*.cython_debug
+
+## VS Code
+.vscode
