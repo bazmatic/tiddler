@@ -53,6 +53,8 @@ class Ship:
     def collide(self, obj):
         collide_type = (obj.collide(self.pos.x, self.pos.y))
         self.bounce(collide_type)
+        for bullet in self.bullets:
+            bullet.collide(obj)
 
     def fire(self):
         bullet_pos = self.pos + pygame.math.Vector2(20, 0).rotate(-self.angle)
@@ -76,6 +78,12 @@ class Ship:
         #elif self.pos.y > screen_height:
         #    self.pos.y = 0
         self.slow()
+
+        for bullet in self.bullets:
+            bullet.update()
+            bullet.draw()
+            if bullet.ttl == 0:
+                self.bullets.remove(bullet)
 
     def draw(self):
         points = [pygame.math.Vector2(20, 0).rotate(-self.angle),

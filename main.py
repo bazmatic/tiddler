@@ -66,17 +66,9 @@ while True:
     # Update the Ship
     ship.update()
     ship.collide(maze)
-
     ship.draw()
 
     # Draw the Maze
     maze.draw()
-    
-    for bullet in bullets:
-        bullet.update()
-        bullet.collide(maze)
-        bullet.draw()
-        if bullet.ttl == 0:
-            bullets.remove(bullet)
     
     pygame.display.update()
