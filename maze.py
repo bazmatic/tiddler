@@ -11,7 +11,8 @@ class CollideType:
     RIGHT = 4
 
 class Maze:
-    def __init__(self, rows, cols, cell_size=100):
+    def __init__(self, screen, rows, cols, cell_size=100):
+        self.screen = screen
         self.cell_size = cell_size
         self.rows = rows
         self.cols = cols
@@ -25,10 +26,10 @@ class Maze:
             output += "\n"
         return output
     
-    def draw(self, surface):
+    def draw(self):
         for row in self.grid:
             for cell in row:
-                cell.draw(surface)
+                cell.draw(self.screen)
 
     # Return true if the point (x, y) is within COLLISION_DIST of a cell wall
 
