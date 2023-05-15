@@ -35,7 +35,7 @@ class Asteroid:
 ship = Ship(screen, screen_width/2, screen_height/2)
 
 # Create the Maze
-maze = Maze(screen, 10, 10, 157)
+maze = Maze(screen, 19, 19, 97)
 maze.generate()
 
 bullets = []

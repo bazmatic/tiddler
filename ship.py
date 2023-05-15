@@ -10,6 +10,7 @@ BULLET_TTL = 10000
 MAX_SHIP_SPEED = 1
 MAX_BULLETS = 10
 MAZE_BLOCK_SIZE = 47
+SHIP_SIZE = 3
 
 class Ship:
     def __init__(self, screen, x, y):
@@ -37,10 +38,12 @@ class Ship:
             self.vel.scale_to_length(MAX_SHIP_SPEED)
         self.thrusting = True
 
-    def slow(self):
-        self.vel = self.vel - (self.vel * 0.0002)
+    def slow(self, amount=1):
+        self.vel -= self.vel * (0.0004 * amount)
 
     def bounce(self, collision_type):
+        if (collision_type == CollideType.NONE):
+            return
         if collision_type == CollideType.TOP:
             self.vel.y = abs(self.vel.y)
         elif collision_type == CollideType.BOTTOM:
@@ -50,9 +53,14 @@ class Ship:
         elif collision_type == CollideType.RIGHT:
             self.vel.x = -abs(self.vel.x)
 
+        self.slow(1000)
+
     def collide(self, obj):
         collide_type = (obj.collide(self.pos.x, self.pos.y))
-        self.bounce(collide_type)
+        #self.bounce(collide_type)
+        self.check_bullet_collisions(obj)
+
+    def check_bullet_collisions(self, obj):
         for bullet in self.bullets:
             bullet.collide(obj)
 
@@ -69,14 +77,14 @@ class Ship:
             self.vel.scale_to_length(self.max_speed)
         self.pos += self.vel
         self.acc *= 0
-        #if self.pos.x < 0:
-        #    self.pos.x = screen_width
-        #elif self.pos.x > screen_width:
-        #   self.pos.x = 0
-        #if self.pos.y < 0:
-        #    self.pos.y = screen_height
-        #elif self.pos.y > screen_height:
-        #    self.pos.y = 0
+        if self.pos.x < 0:
+            self.bounce(CollideType.LEFT)
+        elif self.pos.x > self.screen.get_width():
+           self.bounce(CollideType.RIGHT)
+        if self.pos.y < 0:
+            self.bounce(CollideType.TOP)
+        elif self.pos.y > self.screen.get_height():
+            self.bounce(CollideType.BOTTOM)
         self.slow()
 
         for bullet in self.bullets:
@@ -86,9 +94,9 @@ class Ship:
                 self.bullets.remove(bullet)
 
     def draw(self):
-        points = [pygame.math.Vector2(20, 0).rotate(-self.angle),
-                  pygame.math.Vector2(-10, 10).rotate(-self.angle),
-                  pygame.math.Vector2(-10, -10).rotate(-self.angle)]
+        points = [pygame.math.Vector2(SHIP_SIZE * 2, 0).rotate(-self.angle),
+                  pygame.math.Vector2(-SHIP_SIZE, SHIP_SIZE).rotate(-self.angle),
+                  pygame.math.Vector2(-SHIP_SIZE, -SHIP_SIZE).rotate(-self.angle)]
         points = [p + self.pos for p in points]
         pygame.draw.polygon(self.screen, GREEN, points)
         if self.thrusting:
