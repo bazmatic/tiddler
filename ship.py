@@ -2,15 +2,17 @@ import pygame
 from bullet import Bullet
 from maze import CollideType
 from colours import RED, GREEN
+from random import randint
 
 # Define some constants
 SHIP_ROTATION_SPEED = 0.19
-SHIP_THRUST_POWER = 0.0002
-BULLET_TTL = 10000
+SHIP_THRUST_POWER = 0.0003
+BULLET_TTL = 2000
 MAX_SHIP_SPEED = 1
 MAX_BULLETS = 10
 MAZE_BLOCK_SIZE = 47
-SHIP_SIZE = 3
+SHIP_SIZE = 4
+MAX_FUEL = 10000
 
 class Ship:
     def __init__(self, screen, x, y):
@@ -21,8 +23,16 @@ class Ship:
         self.max_speed = 5
         self.max_force = SHIP_THRUST_POWER
         self.thrusting = False
+        self.eating = False
         self.bullets = []
         self.screen = screen
+        self.name = "ship"
+        self.fuel = MAX_FUEL
+        pygame.mixer.init()
+        self.fire_sound = pygame.mixer.Sound("fire.mp3")
+        self.fire_sound.set_volume(0.1)
+        self.thrust_sound = pygame.mixer.Sound("thruster.mp3")
+        self.eating_sound = pygame.mixer.Sound("eating.mp3")
     
     def rotate_left(self):
         self.angle += SHIP_ROTATION_SPEED
@@ -31,19 +41,81 @@ class Ship:
         self.angle -= SHIP_ROTATION_SPEED
     
     def thrust(self):
+        if self.fuel <= 0:
+            return
         thrust_force = pygame.math.Vector2(1, 0).rotate(-self.angle)
         self.acc += thrust_force * self.max_force
         # maximum speed
         if self.vel.length() > MAX_SHIP_SPEED:
             self.vel.scale_to_length(MAX_SHIP_SPEED)
+        if self.thrusting == False:
+            self.thrust_sound.play(99)
         self.thrusting = True
+    
+    def stopThrust(self):
+        self.thrusting = False
+        self.thrust_sound.fadeout(100)
 
     def slow(self, amount=1):
-        self.vel -= self.vel * (0.0004 * amount)
+        self.vel -= self.vel * (0.0001 * amount)
+
+    def collided_with(self, collision_type, obj):
+        if (obj.name == "block"):
+            self.eat_block(obj)
+            return
+        if (obj.name == "bullet"):
+            if (collision_type == CollideType.NONE):
+                return
+            if collision_type == CollideType.TOP:
+                self.vel.y = abs(self.vel.y)
+            elif collision_type == CollideType.BOTTOM:
+                self.vel.y = -abs(self.vel.y)
+            elif collision_type == CollideType.LEFT:
+                self.vel.x = abs(self.vel.x)
+            elif collision_type == CollideType.RIGHT:
+                self.vel.x = -abs(self.vel.x)
+        print("Ship collided with " + str(collision_type))
+
+    def handle_collision_with(self, obj):
+        (collide_type, struck_object) = obj.get_collision(self)
+        
+        if struck_object:
+            self.collided_with(collide_type, struck_object)
+            struck_object.collided_with(collide_type, self)
+        else:
+            self.stop_eating()
+
+    def handle_bullet_collisions_with(self, obj):
+        for bullet in self.bullets:
+            (collide_type, struck_object) = obj.get_collision(bullet)
+            
+            if struck_object:
+                bullet.collided_with(collide_type, struck_object)
+                struck_object.collided_with(collide_type, bullet) 
+
+    def eat_block(self, block):
+        if block.hp >= 2:
+            if self.eating == False:
+                self.eating = True
+                self.eating_sound.play()
+
+            block.hp -= 1
+            self.fuel += 10
+        else:
+            self.stop_eating()
+        
+            # block is destroyed
+            # Make a sound
+            
+        #if self.fuel > MAX_FUEL:
+        #    self.fuel = MAX_FUEL
+        #self.slow(10)
+
+    def stop_eating(self):
+        self.eating = False
+        self.eating_sound.fadeout(300)
 
     def bounce(self, collision_type):
-        if (collision_type == CollideType.NONE):
-            return
         if collision_type == CollideType.TOP:
             self.vel.y = abs(self.vel.y)
         elif collision_type == CollideType.BOTTOM:
@@ -53,23 +125,12 @@ class Ship:
         elif collision_type == CollideType.RIGHT:
             self.vel.x = -abs(self.vel.x)
 
-        self.slow(1000)
-
-    def collide(self, obj):
-        collide_type = (obj.collide(self.pos.x, self.pos.y))
-        #self.bounce(collide_type)
-        self.check_bullet_collisions(obj)
-
-    def check_bullet_collisions(self, obj):
-        for bullet in self.bullets:
-            bullet.collide(obj)
-
     def fire(self):
         bullet_pos = self.pos + pygame.math.Vector2(20, 0).rotate(-self.angle)
         bullet_vel = pygame.math.Vector2(10, 0).rotate(-self.angle) * 0.1
-        bullet_ttl = BULLET_TTL
-        self.bullets.append(Bullet(self.screen, bullet_pos, bullet_vel, bullet_ttl))
+        self.bullets.append(Bullet(self.screen, bullet_pos, bullet_vel, BULLET_TTL))
         self.firing = True
+        self.fire_sound.play()
         
     def update(self):
         self.vel += self.acc
@@ -98,12 +159,30 @@ class Ship:
                   pygame.math.Vector2(-SHIP_SIZE, SHIP_SIZE).rotate(-self.angle),
                   pygame.math.Vector2(-SHIP_SIZE, -SHIP_SIZE).rotate(-self.angle)]
         points = [p + self.pos for p in points]
-        pygame.draw.polygon(self.screen, GREEN, points)
+        # Ship is duller as it loses fuel
+        fuel_fraction = min(self.fuel, MAX_FUEL) / MAX_FUEL
+        #print(fuel_fraction)
+        if self.eating:
+            colour = pygame.Color(randint(200,255), randint(200,255), randint(200,255))
+        else:
+            colour = pygame.Color(255, int(255 * fuel_fraction), int(120 * fuel_fraction))
+        pygame.draw.polygon(self.screen, colour, points)
         if self.thrusting:
+            self.fuel -= 1
             jet_pos = pygame.math.Vector2(-10, 0).rotate(-self.angle) + self.pos
-            pygame.draw.circle(self.screen, RED, jet_pos, 5)
+            pygame.draw.circle(self.screen, self.flame_colour(), jet_pos, 5)
             jet_pos = pygame.math.Vector2(-13, -5).rotate(-self.angle) + self.pos
-            pygame.draw.circle(self.screen, RED, jet_pos, 3)
+            pygame.draw.circle(self.screen, self.flame_colour(0.5), jet_pos, 3)
             jet_pos = pygame.math.Vector2(-13, 5).rotate(-self.angle) + self.pos
-            pygame.draw.circle(self.screen, RED, jet_pos, 3)
-            self.thrusting = False
+            pygame.draw.circle(self.screen, self.flame_colour(0.5), jet_pos, 3)
+        
+ 
+    def flame_colour(self, brightness=1):
+        r = 255
+        g = randint(0, 255)
+        b = randint(0, 255)
+        r = int(r * brightness)
+        g = int(g * brightness)
+        b = int(b * brightness)
+ 
+        return pygame.Color(r, g, b)

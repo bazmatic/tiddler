@@ -1,6 +1,6 @@
 import random
-import pygame
-from pygame import Surface
+from pygame import Surface, Color, draw
+
 
 # Enum of collide types: 0 = no collision, 1 = top, 2 = bottom, 3 = left, 4 = right
 class CollideType:
@@ -10,114 +10,72 @@ class CollideType:
     LEFT = 3
     RIGHT = 4
 
-class Maze:
-    def __init__(self, screen, rows, cols, cell_size=100):
-        self.screen = screen
-        self.cell_size = cell_size
-        self.rows = rows
-        self.cols = cols
-        self.grid = [[Cell(r, c, cell_size) for c in range(cols)] for r in range(rows)]
+# Block class
+class Block:
+    def __init__(self, parent, surface, x, y, size):
+        self.x = x
+        self.y = y
+        self.size = size
+        self.surface = surface
+        self.active = True
+        self.name = "block"
+        self.hp = random.randint(100, 255)
 
-    def __str__(self):
-        output = ""
-        for row in self.grid:
-            for cell in row:
-                output += str(cell)
-            output += "\n"
-        return output
-    
     def draw(self):
-        for row in self.grid:
-            for cell in row:
-                cell.draw(self.screen)
+        # Draw the block on the given surface
+        if self.active:
+            energy = int(self.hp)
+            color = Color(energy, energy, energy)
+            draw.circle(self.surface, color, (self.x + self.size/2, self.y + self.size/2), self.size/2)
+            #Surface.fill(self.surface,color, (self.x+1, self.y+1, self.size-1, self.size-1))
+            if self.hp <= 0:
+                self.active = False
 
-    # Return true if the point (x, y) is within COLLISION_DIST of a cell wall
+    def get_collision_type(self, position):
 
-    def collide(self, x, y):
-        COLLISION_DIST = 8
-        row = int(y / self.cell_size)
-        col = int(x / self.cell_size)
-        cell = self.grid[row][col]
-        if cell.top and abs(y - row*self.cell_size) < COLLISION_DIST:
-            return CollideType.TOP
-        if cell.bottom and abs(y - (row+1)*self.cell_size) < COLLISION_DIST:
-            return CollideType.BOTTOM
-        if cell.left and abs(x - col*self.cell_size) < COLLISION_DIST:
-            return CollideType.LEFT
-        if cell.right and abs(x - (col+1)*self.cell_size) < COLLISION_DIST:
-            return CollideType.RIGHT
-        return False
+        # Check if the given position collides with this block
+        # and return the collision type
+        if self.active == False:
+            return CollideType.NONE
+        
+        if position.x >= self.x and position.x <= self.x + self.size:
+            if position.y >= self.y and position.y <= self.y + self.size:              
+               # Random collision type
+                return random.randint(1, 4)
+            
+        return CollideType.NONE
+
+    def collided_with(self, collision_type, obj):
+        pass
+            
+
+# Maze class
+class Maze:
+    def __init__(self, screen, width, height, block_size):
+        self.width = width
+        self.height = height
+        self.block_size = block_size
+        self.blocks = []
+        self.surface = screen
+        self.generate()
 
     def generate(self):
-        start_row = random.randint(0, self.rows - 1)
-        start_col = random.randint(0, self.cols - 1)
-        self._generate_recursive(start_row, start_col)
+        # Generate random blocks for the maze
+        for x in range(0, self.width, self.block_size):
+            for y in range(0, self.height, self.block_size):
+                if random.random() < 0.1:  # Adjust the probability as desired
+                    block = Block(self, self.surface, x, y, self.block_size)
+                    self.blocks.append(block)
+    def draw(self):
+        # Draw all the blocks of the maze on the given surface
+        for block in self.blocks:
+            block.draw()
 
-    def _generate_recursive(self, row, col):
-        cell = self.grid[row][col]
-        cell.visited = True
-
-        # Randomly shuffle the neighbors
-        neighbors = []
-        if row > 0 and not self.grid[row-1][col].visited:  # Up
-            neighbors.append((row-1, col))
-        if row < self.rows-1 and not self.grid[row+1][col].visited:  # Down
-            neighbors.append((row+1, col))
-        if col > 0 and not self.grid[row][col-1].visited:  # Left
-            neighbors.append((row, col-1))
-        if col < self.cols-1 and not self.grid[row][col+1].visited:  # Right
-            neighbors.append((row, col+1))
-        random.shuffle(neighbors)
-
-        # Recursive call for each unvisited neighbor
-        for neighbor_row, neighbor_col in neighbors:
-            neighbor_cell = self.grid[neighbor_row][neighbor_col]
-            if not neighbor_cell.visited:
-                if neighbor_row == row - 1:  # Up
-                    cell.top = False
-                    neighbor_cell.bottom = False
-                elif neighbor_row == row + 1:  # Down
-                    cell.bottom = False
-                    neighbor_cell.top = False
-                elif neighbor_col == col - 1:  # Left
-                    cell.left = False
-                    neighbor_cell.right = False
-                elif neighbor_col == col + 1:  # Right
-                    cell.right = False
-                    neighbor_cell.left = False
-                self._generate_recursive(neighbor_row, neighbor_col)
-
-
-class Cell:
-    def __init__(self, row, col, cell_size=20):
-        self.row = row
-        self.col = col
-        self.visited = False
-        self.top = True
-        self.bottom = True
-        self.left = True
-        self.right = True
-        self.cell_size = cell_size
-
-    def draw(self, surface):
-        if self.top:
-            pygame.draw.line(surface, (255, 255, 255), (self.col*self.cell_size, self.row*self.cell_size), ((self.col+1)*self.cell_size, self.row*self.cell_size))
-        if self.bottom:
-            pygame.draw.line(surface, (255, 255, 255), (self.col*self.cell_size, (self.row+1)*self.cell_size), ((self.col+1)*self.cell_size, (self.row+1)*self.cell_size))
-        if self.left:
-            pygame.draw.line(surface, (255, 255, 255), (self.col*self.cell_size, self.row*self.cell_size), (self.col*self.cell_size, (self.row+1)*self.cell_size))
-        if self.right:
-            pygame.draw.line(surface, (255, 255, 255), ((self.col+1)*self.cell_size, self.row*self.cell_size), ((self.col+1)*self.cell_size, (self.row+1)*self.cell_size))
-    
-
-    def __str__(self):
-        output = "+"
-        output += "-" if self.top else " "
-        output += "+\n"
-        output += "|" if self.left else " "
-        output += " "  # This space is for the player
-        output += "|" if self.right else " "
-        output += "\n+"
-        output += "-" if self.bottom else " "
-        output += "+"
-        return output
+    def get_collision(self, obj):
+        # Check for collision at the given position
+        position = obj.pos
+        for block in self.blocks:
+            collision_type = block.get_collision_type(position)
+            if collision_type != CollideType.NONE:
+                return collision_type, block
+        return CollideType.NONE, None

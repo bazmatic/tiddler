@@ -3,6 +3,7 @@ import pygame
 from pygame import surface
 from maze import CollideType
 from colours import WHITE
+from random import randint as randInt
 
 class Bullet:
     def __init__(self, screen, pos, vel, ttl):
@@ -10,9 +11,16 @@ class Bullet:
         self.vel = vel
         self.ttl = ttl
         self.screen = screen
+        self.name = "bullet"
+        self.color = pygame.Color(randInt(200, 255), randInt(200, 255), randInt(200, 255))
 
-    def collide(self, obj):
-        collide_type = (obj.collide(self.pos.x, self.pos.y))
+    def collided_with(self, collide_type, obj):
+        if obj.name == "ship":
+            self.ttl = 0
+            return
+        if obj.name == "block":
+            obj.active = False
+            
         self.bounce(collide_type)
 
     def bounce(self, collision_type):
@@ -28,7 +36,9 @@ class Bullet:
     def update(self):
         self.pos += self.vel
         self.ttl -= 1
+        if (self.pos.x < 0):
+            self.ttl = 0
 
     def draw(self):
-        pygame.draw.circle(self.screen, WHITE, self.pos, 3)
+        pygame.draw.circle(self.screen, self.color, self.pos, 3)
 

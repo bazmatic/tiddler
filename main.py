@@ -1,9 +1,9 @@
 import pygame
 import sys
 import random
-from maze import Maze
 from ship import Ship
 from colours import GREEN, RED, WHITE, BLACK
+from maze import Maze
 
 pygame.init()
 
@@ -11,6 +11,7 @@ screen_width = 1200
 screen_height = 800
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption("Tiddler")
+font = pygame.font.Font("./Hyperspace.ttf", 36)
 
 # Set up the clock
 clock = pygame.time.Clock()
@@ -35,10 +36,7 @@ class Asteroid:
 ship = Ship(screen, screen_width/2, screen_height/2)
 
 # Create the Maze
-maze = Maze(screen, 19, 19, 97)
-maze.generate()
-
-bullets = []
+maze = Maze(screen, 1200, 800, 40)
 
 while True:
     for event in pygame.event.get():
@@ -53,6 +51,8 @@ while True:
         ship.rotate_right()
     if keys[pygame.K_UP]:
         ship.thrust()
+    else:
+        ship.stopThrust()
     if keys[pygame.K_x]:
         if (not ship.firing):
             ship.fire()
@@ -62,13 +62,17 @@ while True:
     
     # Draw the background
     screen.fill((0, 0, 0))
+    score_text = font.render("Fuel " + str(ship.fuel), True, pygame.Color(GREEN))
     
+
     # Update the Ship
     ship.update()
-    ship.collide(maze)
-    ship.draw()
 
-    # Draw the Maze
-    maze.draw()
+    ship.handle_collision_with(maze)
+    ship.handle_bullet_collisions_with(maze)
     
-    pygame.display.update()
+    maze.draw()
+    ship.draw()
+    screen.blit(score_text, (10, 10))
+
+    pygame.display.flip()
