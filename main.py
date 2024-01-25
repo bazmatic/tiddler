@@ -7,6 +7,7 @@ from maze import Maze
 
 pygame.init()
 
+history = []
 screen_width = 1200
 screen_height = 800
 screen = pygame.display.set_mode((screen_width, screen_height))
@@ -16,6 +17,7 @@ font = pygame.font.Font("./Hyperspace.ttf", 36)
 # Set up the clock
 clock = pygame.time.Clock()
 
+game_state = []
 
 class Asteroid:
     def __init__(self):
@@ -47,24 +49,25 @@ while True:
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
         ship.rotate_left()
-    if keys[pygame.K_RIGHT]:
+    elif keys[pygame.K_RIGHT]:
         ship.rotate_right()
+    else:
+        ship.stop_rotating()
+
     if keys[pygame.K_UP]:
         ship.thrust()
     else:
-        ship.stopThrust()
+        ship.stop_thrust()
     if keys[pygame.K_x]:
         if (not ship.firing):
             ship.fire()
-        ship.firing = True
     else:
-        ship.firing = False
+        ship.stop_firing()
     
     # Draw the background
     screen.fill((0, 0, 0))
     score_text = font.render("Fuel " + str(ship.fuel), True, pygame.Color(GREEN))
     
-
     # Update the Ship
     ship.update()
 
@@ -76,3 +79,6 @@ while True:
     screen.blit(score_text, (10, 10))
 
     pygame.display.flip()
+
+
+

@@ -14,6 +14,12 @@ MAZE_BLOCK_SIZE = 47
 SHIP_SIZE = 4
 MAX_FUEL = 10000
 
+
+class RotateType:
+    NONE = 0
+    LEFT = 1
+    RIGHT = 2
+
 class Ship:
     def __init__(self, screen, x, y):
         self.pos = pygame.math.Vector2(x, y)
@@ -23,6 +29,7 @@ class Ship:
         self.max_speed = 5
         self.max_force = SHIP_THRUST_POWER
         self.thrusting = False
+        self.rotation = RotateType.NONE
         self.eating = False
         self.bullets = []
         self.screen = screen
@@ -36,9 +43,14 @@ class Ship:
     
     def rotate_left(self):
         self.angle += SHIP_ROTATION_SPEED
+        self.rotation = RotateType.LEFT
     
     def rotate_right(self):
         self.angle -= SHIP_ROTATION_SPEED
+        self.rotatiion = RotateType.RIGHT
+
+    def stop_rotating(self):
+        self.rotating = RotateType.NONE
     
     def thrust(self):
         if self.fuel <= 0:
@@ -52,7 +64,7 @@ class Ship:
             self.thrust_sound.play(99)
         self.thrusting = True
     
-    def stopThrust(self):
+    def stop_thrust(self):
         self.thrusting = False
         self.thrust_sound.fadeout(100)
 
@@ -103,13 +115,6 @@ class Ship:
             self.fuel += 10
         else:
             self.stop_eating()
-        
-            # block is destroyed
-            # Make a sound
-            
-        #if self.fuel > MAX_FUEL:
-        #    self.fuel = MAX_FUEL
-        #self.slow(10)
 
     def stop_eating(self):
         self.eating = False
@@ -131,6 +136,9 @@ class Ship:
         self.bullets.append(Bullet(self.screen, bullet_pos, bullet_vel, BULLET_TTL))
         self.firing = True
         self.fire_sound.play()
+
+    def stop_firing(self):
+        self.firing = False
         
     def update(self):
         self.vel += self.acc
@@ -186,3 +194,19 @@ class Ship:
         b = int(b * brightness)
  
         return pygame.Color(r, g, b)
+    
+    def get_state(self): 
+        return {
+            "rotation": self.rotation,        
+            "pos": self.pos,
+            "vel": self.vel,
+            "acc": self.acc,
+            "angle": self.angle,
+            "fuel": self.fuel,
+            "max_speed": self.max_speed,
+            "thrusting": self.thrusting,
+            "firing": self.firing,
+            "eating": self.eating,
+            #"bullets": [bullet.get_state() for bullet in self.bullets]
+        }
+    
