@@ -1,6 +1,8 @@
 # Tiddler
 
-Tiddler is a 2D space game built with Pygame. Navigate your ship to collect fuel and fire your bullets for the sheet pointless joy of it. The ship uses the classic control method pioneered in the old "Asteroids" game.
+Tiddler is a 2D space game built with Pygame. Navigate your ship to collect fuel and fire your bullets for the sheet pointless joy of it. The ship uses the classic control method pioneered in the old "Asteroids" game: rotate left, rotate right, thrust.
+
+
 
 ## Installation
 
